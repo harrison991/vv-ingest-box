@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclass import dataclass
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Tuple, Dict
 import numpy as np
