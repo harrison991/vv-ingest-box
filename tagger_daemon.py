@@ -183,7 +183,7 @@ def tag_file(path_str: str) -> Tuple[bool, str]:
         if img is None:
             return False, "image_read_failed"
         tagged = basic_image_tags(img)
-        result("top_tags") = tagged["tags"]
+        result_top_tags = tagged["tags"]
         result["details"] = tagged
     
     elif ext in VIDEO_EXTS:
