@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import time
 import json
@@ -13,6 +14,7 @@ import board
 import busio
 import adafruit_ssd1306
 
+
 CONFIG_PATH = "/opt/vv_ingest/config.env"
 STATE_JSON = "/var/lib/vv_ingest/state.json"
 LOG_FILE = "/var/log/vv_ingest/ingest.log"
@@ -22,12 +24,13 @@ def load_env(path: str) -> dict:
     if not os.path.exists(path):
         return env
     with open(path, "r", encoding="utf-8") as f:
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        k, v = line.split("=", 1)
-        env[k.strip()] = v.strip().strip('"').strip("'")
-        return env
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            env[k.strip()] = v.strip().strip('"').strip("'")
+    return env
 
 ENV = load_env(CONFIG_PATH)
 
@@ -39,7 +42,7 @@ LOW_SPACE_GB = int(ENV.get("LOW_SPACE_GB", "50"))
 
 # OLED init
 i2c = busio.I2C(board.SCL, board.SDA)
-oled = adafruit_ssd1306.SSD1206_I2C(128, 64, i2c, addr=OLED_ADDR)
+oled = adafruit_ssd1306.SSD1306_I2C(128, 64, i2c, addr=OLED_ADDR)
 
 # Use default font (small)
 font = ImageFont.load_default()
@@ -50,13 +53,13 @@ screen_index = 0
 screen_count = 5
 
 def read_state():
-    if not os.path.exists(SATE_JSON):
-        return {"mode": "idle", "message": "Waiting for GoPro...", "progress": ""}
+    if not os.path.exists(STATE_JSON):
+        return {"mode": "idle", "message": "Waiting for GoPro…", "progress": ""}
     try:
         with open(STATE_JSON, "r", encoding="utf-8") as f:
             return json.load(f)
-        except Exception:
-            return {"mode": "error", "message": "State read error", "progress": ""}
+    except Exception:
+        return {"mode": "error", "message": "State read error", "progress": ""}
 
 def disk_info(path: str):
     try:
@@ -81,7 +84,7 @@ def get_ip():
 
 def tail_log(lines=3):
     if not os.path.exists(LOG_FILE):
-        return["No log yet"]
+        return ["No log yet"]
     try:
         with open(LOG_FILE, "r", encoding="utf-8", errors="ignore") as f:
             data = f.readlines()
@@ -109,7 +112,7 @@ def draw(lines):
     for line in lines:
         draw.text((0, y), line[:21], font=font, fill=255)
         y += 12
-    
+
     oled.image(image)
     oled.show()
 
@@ -136,47 +139,47 @@ def render_screen(idx):
             if free_gb < LOW_SPACE_GB:
                 lines[4] = f"LOW SPACE: {free_gb:.0f}GB"
         return lines
-    
+
     if idx == 1:
         # Storage
         di = disk_info(DEST_BASE)
         if not di:
-            return [BOX_NAME, "Storage:", "Not mounted", DEST_BASE[-21:]]
+            return [BOX_NAME, "Storage:", "Not mounted", DEST_BASE[-21:], ""]
         free_gb, used_gb, total_gb = di
         return [
             BOX_NAME,
-            "Storage (DEST)",
+            "Storage (DEST):",
             f"Free: {free_gb:.0f}GB",
             f"Used: {used_gb:.0f}GB",
-            f"Tot: {total_gb:.0f}GB",
+            f"Tot:  {total_gb:.0f}GB",
         ]
-    
+
     if idx == 2:
         # Health
         h = drive_health()
         return [
-            BOX_NAME, 
+            BOX_NAME,
             "Health:",
             h,
             "",
             "Btn: next screen",
         ]
-    
+
     if idx == 3:
         # Network
-        if = get_ip()
+        ip = get_ip()
         host = socket.gethostname()
         return [
             BOX_NAME,
             "Network:",
             f"Host: {host}"[:21],
             f"IP: {ip}"[:21],
-            ""
+            "",
         ]
 
     if idx == 4:
         # Recent logs
-        t = tail.log(3)
+        t = tail_log(3)
         return [
             BOX_NAME,
             "Recent log:",
@@ -184,12 +187,12 @@ def render_screen(idx):
             t[1][:21] if len(t) > 1 else "",
             t[2][:21] if len(t) > 2 else "",
         ]
-    
+
     return [BOX_NAME, "Unknown screen", "", "", ""]
 
 def next_screen():
     global screen_index
-    screen_index = (screen_index +1) % screen_count
+    screen_index = (screen_index + 1) % screen_count
 
 button.when_pressed = next_screen
 
@@ -203,5 +206,5 @@ def main():
         draw(lines)
         time.sleep(0.25)
 
-if __name__ = "__main__":
+if __name__ == "__main__":
     main()
