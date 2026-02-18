@@ -17,6 +17,7 @@ import adafruit_ssd1306
 
 CONFIG_PATH = "/opt/vv_ingest/config.env"
 STATE_JSON = "/var/lib/vv_ingest/state.json"
+AI_STATE_JSON = "/var/lib/vv_ingest/ai_state.json"
 LOG_FILE = "/var/log/vv_ingest/ingest.log"
 
 def load_env(path: str) -> dict:
@@ -50,7 +51,7 @@ font = ImageFont.load_default()
 button = Button(BUTTON_GPIO, pull_up=True, bounce_time=0.05)
 
 screen_index = 0
-screen_count = 5
+screen_count = 6
 
 def read_state():
     if not os.path.exists(STATE_JSON):
@@ -102,6 +103,15 @@ def drive_health():
         return out[-32:]
     except Exception:
         return "SMART: Unavailable"
+
+def read_ai_state():
+    if not os.path.exists(AI_STATE_JSON):
+        return {"mode": "ai_idle", "message": "AI not running", "queue":0, "current":"", "progress":""}
+    try:
+        with open(AI_STATE_JSON, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception:
+        return {"mode": "ai_error", "message": "AI state error", "queue":0, "current":"", "progress":""}
 
 def draw(lines):
     oled.fill(0)
@@ -186,6 +196,17 @@ def render_screen(idx):
             t[0][:21] if len(t) > 0 else "",
             t[1][:21] if len(t) > 1 else "",
             t[2][:21] if len(t) > 2 else "",
+        ]
+    
+    if idx == 5:
+        # AI Telemetry screen
+        ai_state = read_ai_state()
+        return [
+            BOX_NAME,
+            "AI Tagging:",
+            f"Mode: {ai_state['mode']}",
+            f"Queue: {ai_state['queue']}",
+            f"Current: {ai_state['current'][:15]}",
         ]
 
     return [BOX_NAME, "Unknown screen", "", "", ""]
