@@ -56,6 +56,7 @@ STAMP="(date '+%Y-%m-%d_%H-%M-%S')"
 DEST_FOLDER="$DEST_BASE/$STAMP"
 mkdir -p "$DEST_FOLDER"
 
+
 log "Destination: $DEST_FOLDER"
 set_state "copy" "Copying..." "0%"
 
@@ -77,6 +78,9 @@ done
 sync
 set_state "done" "Backup complete" "Safe to unplug"
 log "Copy complete"
+
+# Enqueue new files for AI tagging
+/opt/vv_ingest/venv/bin/python /opt/vv_ingest/enqueue_for_tagging.py "$DEST_FOLDER" >> /var/log/vv_ingest/ingest.log 2>&1
 
 # try and unmount the drive safely
 set_state "eject" "Ejecting..." ""
