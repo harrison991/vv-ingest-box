@@ -1,0 +1,6 @@
+adafruit-circuitpython-ssd1306
+pillow
+gpiozero
+opencv-python-headless
+numpy
+tflite-runtime
